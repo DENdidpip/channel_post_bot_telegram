@@ -3,6 +3,7 @@ import requests
 import time
 import threading
 from telebot import types
+
 from dotenv import load_dotenv
 import os
 
@@ -19,6 +20,13 @@ cats_channal_ip = os.getenv("CHANNEL_WITH_CATS")
 dogs_channal_ip = os.getenv("CHANNEL_WITH_DOGS")
 
 password_for_panel = os.getenv("CHOOSE_THE_PASSWORD")
+
+bot = telebot.TeleBot('YOUR_TELEGRAM_BOT_TOKEN')
+
+cats_channal_ip = 'CHANNEL_WITH_CATS'
+dogs_channal_ip = 'CHANNEL_WITH_DOGS'
+
+password_for_panel = 'CHOOSE_THE_PASSWORD'
 
 secure = False
 catt = False
