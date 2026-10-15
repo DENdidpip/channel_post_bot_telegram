@@ -9,69 +9,53 @@ import publishers
 
 @bot.message_handler(content_types=["text"])
 def cats(message):
-    # Проверяем доступ
     if message.from_user.id not in ACCESS:
         bot.send_message(message.chat.id, "Access denied")
-        print("Someone is trying to get access")
         return
 
-    # Если нажали кнопку котов
     if message.text == "🐱":
         with publishers.lock:
-            publishers.catt = not publishers.catt
-            enabled = publishers.catt
+            if publishers.cat_thread is not None and publishers.cat_thread.is_alive():
+                publishers.cat_stop.set()
+                status = "OFF"
+            else:
+                publishers.cat_stop = threading.Event()
+                publishers.cat_thread = threading.Thread(
+                    target=publishers.send_cat_facts,
+                    args=(publishers.cat_stop,),
+                    daemon=True,
+                )
+                publishers.cat_thread.start()
+                status = "ON"
 
-        if enabled:
-            threading.Thread(
-                target=publishers.send_cat_facts,
-                daemon=True
-            ).start()
+        bot.send_message(message.chat.id, f"Part 'Cat' is {status}")
 
-            bot.send_message(
-                message.chat.id,
-                "Part 'Cat' is ON"
-            )
-        else:
-            bot.send_message(
-                message.chat.id,
-                "Part 'Cat' is OFF"
-            )
-
-    # Если нажали кнопку собак
     elif message.text == "🐶":
         with publishers.lock:
-            publishers.dogg = not publishers.dogg
-            enabled = publishers.dogg
+            if publishers.dog_thread is not None and publishers.dog_thread.is_alive():
+                publishers.dog_stop.set()
+                status = "OFF"
+            else:
+                publishers.dog_stop = threading.Event()
+                publishers.dog_thread = threading.Thread(
+                    target=publishers.send_dog_facts,
+                    args=(publishers.dog_stop,),
+                    daemon=True,
+                )
+                publishers.dog_thread.start()
+                status = "ON"
 
-        if enabled:
-            threading.Thread(
-                target=publishers.send_dog_facts,
-                daemon=True
-            ).start()
+        bot.send_message(message.chat.id, f"Part 'Dog' is {status}")
 
-            bot.send_message(
-                message.chat.id,
-                "Part 'Dog' is ON"
-            )
-        else:
-            bot.send_message(
-                message.chat.id,
-                "Part 'Dog' is OFF"
-            )
-
-    # Для любого другого текста показываем меню
     else:
-        markup = types.ReplyKeyboardMarkup(
-            resize_keyboard=True
-        )
-
+        markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
         markup.row(
             types.KeyboardButton("🐱"),
-            types.KeyboardButton("🐶")
+            types.KeyboardButton("🐶"),
         )
 
         bot.send_message(
             message.chat.id,
             "Hello admin",
-            reply_markup=markup
+            reply_markup=markup,
         )

@@ -1,4 +1,4 @@
-import time
+
 import threading
 import requests
 
@@ -13,17 +13,17 @@ from config import (
     TIMESLEEP,
 )
 
-catt = False
-dogg = False
+cat_stop = None
+dog_stop = None
+
+cat_thread = None
+dog_thread = None
+
 lock = threading.Lock()
 
 
-def send_cat_facts():
-    while True:
-        with lock:
-            if not catt:
-                break
-
+def send_cat_facts(stop_event):
+    while not stop_event.is_set():
         try:
             photo_response = requests.get(
                 URL_PHOTOS_CATS, timeout=15
@@ -37,30 +37,30 @@ def send_cat_facts():
             fact_response.raise_for_status()
             fact = fact_response.json()["fact"]
 
+            # Не отправляем пост, если поток уже остановили
+            if stop_event.is_set():
+                break
+
             bot.send_photo(
                 chat_id=CATS_CHANNEL_ID,
                 photo=photo_data["url"],
-                caption=fact
+                caption=fact,
             )
 
         except Exception as e:
             print("Cat error:", e)
 
-        time.sleep(TIMESLEEP)
+        if stop_event.wait(TIMESLEEP):
+            break
 
 
-def send_dog_facts():
-    while True:
-        with lock:
-            if not dogg:
-                break
-
+def send_dog_facts(stop_event):
+    while not stop_event.is_set():
         try:
             fact_response = requests.get(
                 URL_FACTS_DOGS, timeout=15
             )
             fact_response.raise_for_status()
-
             facts = fact_response.json().get(
                 "facts", ["No fact found"]
             )
@@ -71,13 +71,17 @@ def send_dog_facts():
             photo_response.raise_for_status()
             photo_data = photo_response.json()
 
+            if stop_event.is_set():
+                break
+
             bot.send_photo(
                 chat_id=DOGS_CHANNEL_ID,
                 photo=photo_data[0]["url"],
-                caption=facts[0]
+                caption=facts[0],
             )
 
         except Exception as e:
             print("Dog error:", e)
 
-        time.sleep(TIMESLEEP)
+        if stop_event.wait(TIMESLEEP):
+            break
